@@ -71,7 +71,7 @@ public class Extract {
         return mentionedUsers;
     }
 
-    private static Set<String> getMentionedUsersInOneTweet(Tweet tweet) {
+    public static Set<String> getMentionedUsersInOneTweet(Tweet tweet) {
         Set<String> mentionedUsers = new HashSet<>();
         String text = tweet.getText();
 
