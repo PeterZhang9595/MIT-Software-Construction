@@ -11,10 +11,10 @@ import java.util.stream.Collectors;
  * 
  * <p>PS2 instructions: you MUST use the provided rep.
  */
-public class ConcreteEdgesGraph implements Graph<String> {
+public class ConcreteEdgesGraph<L> implements Graph<L> {
     
-    private final Set<String> vertices = new HashSet<>();
-    private final List<Edge> edges = new ArrayList<>();
+    private final Set<L> vertices = new HashSet<>();
+    private final List<Edge<L>> edges = new ArrayList<>();
     
     // Abstraction function:
     //   TODO Set<String> vertices + List<Edge> edges -> graph with vertices and edges in the list, in short 'g'
@@ -30,27 +30,27 @@ public class ConcreteEdgesGraph implements Graph<String> {
     // TODO checkRep
     private void checkRep()
     {
-        for (Edge e : edges) {
+        for (Edge<L> e : edges) {
             assert vertices.contains(e.getSource());
             assert vertices.contains(e.getTarget());
         }
         for (int i = 0; i < edges.size(); i++) {
             for (int j = i + 1; j < edges.size(); j++) {
-                Edge e1 = edges.get(i);
-                Edge e2 = edges.get(j);
+                Edge<L> e1 = edges.get(i);
+                Edge<L> e2 = edges.get(j);
                 assert !(e1.getSource().equals(e2.getSource()) && e1.getTarget().equals(e2.getTarget()));
             }
         }
     }
 
-    @Override public boolean add(String vertex) {
+    @Override public boolean add(L vertex) {
         boolean added = !vertices.contains(vertex);
         vertices.add(vertex);
         checkRep();
         return added;
     }
     
-    @Override public int set(String source, String target, int weight) {
+    @Override public int set(L source, L target, int weight) {
         if (weight < 0) {
             throw new IllegalArgumentException("weight should be non-negative");
         }
@@ -58,9 +58,9 @@ public class ConcreteEdgesGraph implements Graph<String> {
         int prevWeight = 0;
         
         // Find and remove existing edge, capture its weight
-        java.util.Iterator<Edge> iterator = edges.iterator();
+        java.util.Iterator<Edge<L>> iterator = edges.iterator();
         while (iterator.hasNext()) {
-            Edge e = iterator.next();
+            Edge<L> e = iterator.next();
             if (e.getSource().equals(source) && e.getTarget().equals(target)) {
                 prevWeight = e.getWeight();
                 iterator.remove();
@@ -72,34 +72,28 @@ public class ConcreteEdgesGraph implements Graph<String> {
         if (weight > 0) {
             vertices.add(source);
             vertices.add(target);
-            edges.add(new Edge(source, target, weight));
+            edges.add(new Edge<>(source, target, weight));
         }
         
         checkRep();
         return prevWeight;
     }
     
-    @Override public boolean remove(String vertex) {
+    @Override public boolean remove(L vertex) {
         boolean removed = vertices.contains(vertex);
         vertices.remove(vertex);
-        java.util.Iterator<Edge> iterator = edges.iterator();
-        while (iterator.hasNext()) {
-            Edge e = iterator.next();
-            if (e.getSource().equals(vertex) || e.getTarget().equals(vertex)) {
-                iterator.remove();
-            }
-        }
+        edges.removeIf(e -> e.getSource().equals(vertex) || e.getTarget().equals(vertex));
         checkRep();
         return removed;
     }
     
-    @Override public Set<String> vertices() {
+    @Override public Set<L> vertices() {
         return new HashSet<>(vertices);
     }
     
-    @Override public Map<String, Integer> sources(String target) {
-        Map<String, Integer> sources = new HashMap<>();
-        for (Edge e : edges) {
+    @Override public Map<L, Integer> sources(L target) {
+        Map<L, Integer> sources = new HashMap<>();
+        for (Edge<L> e : edges) {
             if (e.getTarget().equals(target)) {
                 sources.put(e.getSource(), e.getWeight());
             }
@@ -107,9 +101,9 @@ public class ConcreteEdgesGraph implements Graph<String> {
         return Collections.unmodifiableMap(sources);
     }
     
-    @Override public Map<String, Integer> targets(String source) {
-        Map<String, Integer> targets = new HashMap<>();
-        for (Edge e : edges) {
+    @Override public Map<L, Integer> targets(L source) {
+        Map<L, Integer> targets = new HashMap<>();
+        for (Edge<L> e : edges) {
             if (e.getSource().equals(source)) {
                 targets.put(e.getTarget(), e.getWeight());
             }
@@ -127,11 +121,11 @@ public class ConcreteEdgesGraph implements Graph<String> {
         StringBuilder sb = new StringBuilder();
         sb.append("Graph Structure:\n");
 
-        for (String vertex : vertices) { 
+        for (L vertex : vertices) { 
             sb.append("  ").append(vertex).append(": ");
 
             // 找到从该顶点出发的所有边
-            Map<String, Integer> targets = targets(vertex);
+            Map<L, Integer> targets = targets(vertex);
 
             if (targets.isEmpty()) {
                 sb.append("(no outgoing edges)");
@@ -157,11 +151,11 @@ public class ConcreteEdgesGraph implements Graph<String> {
  * <p>PS2 instructions: the specification and implementation of this class is
  * up to you.
  */
-class Edge {
+class Edge<L> {
 
     // TODO fields
-    private final String source;
-    private final String target;
+    private final L source;
+    private final L target;
     private final int weight;
     // Abstraction function:
     //   TODO String target + String source + int weight -> edge from source to target with weight, in short 'e'
@@ -172,7 +166,7 @@ class Edge {
 
     
     // TODO constructor
-    public Edge(String source, String target, int weight) {
+    public Edge(L source, L target, int weight) {
         this.source = source;
         this.target = target;
         this.weight = weight;
@@ -188,8 +182,8 @@ class Edge {
     }
     
     // TODO methods
-    public String getSource() { return source; }
-    public String getTarget() { return target; }
+    public L getSource() { return source; }
+    public L getTarget() { return target; }
     public int getWeight() { return weight; }
     
     // TODO toString()

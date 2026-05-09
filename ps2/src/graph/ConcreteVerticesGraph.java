@@ -11,10 +11,10 @@ import java.util.stream.Collectors;
  * 
  * <p>PS2 instructions: you MUST use the provided rep.
  */
-public class ConcreteVerticesGraph implements Graph<String> {
+public class ConcreteVerticesGraph<L> implements Graph<L> {
     
-    private final List<Vertex> vertices = new ArrayList<>();
-    private final Set<String> verticesLabels = new HashSet<>();
+    private final List<Vertex<L>> vertices = new ArrayList<>();
+    private final Set<L> verticesLabels = new HashSet<>();
     
     // Abstraction function:
     //   TODO The vertex list represents the graph.
@@ -29,102 +29,97 @@ public class ConcreteVerticesGraph implements Graph<String> {
     }
     // TODO checkRep
     private void checkRep(){
-        assert verticesLabels.size() == vertices.size();
+        Set<L> labelsFromVertices = new HashSet<>();
+        for (Vertex<L> v : vertices) labelsFromVertices.add(v.getLabel());
+        assert verticesLabels.equals(labelsFromVertices) : "verticesLabels must equal actual vertex labels";
     }
 
-    @Override public boolean add(String vertex) {
+    @Override public boolean add(L vertex) {
         if (verticesLabels.contains(vertex)){
             return false;
         }
-        Vertex v = new Vertex(vertex);
+        Vertex<L> v = new Vertex<>(vertex);
         verticesLabels.add(vertex);
         vertices.add(v);
         checkRep();
         return true;
     }
     
-    @Override public int set(String source, String target, int weight) {
+    @Override public int set(L source, L target, int weight) {
         if(weight<0){
             throw new IllegalArgumentException("Weight must >= 0");
         }
         int prevWeight = 0;
-        if(this.verticesLabels.contains(source)&&this.verticesLabels.contains(target))
-        {
-            if (weight ==0)
-            {
-                for(Vertex v : vertices){
-                    if (v.getLabel().equals(source)){
-                        prevWeight = v.removeTarget(target);
-                    }
-                    if(v.getLabel().equals(target)){
-                        prevWeight = v.removeSource(source);
-                    }
-                }
-            }
-            else{
-                for(Vertex v : vertices){
-                    if (v.getLabel().equals(target)){
-                        prevWeight = v.addSource(source,weight);
-                    }
-                    if(v.getLabel().equals(source)){
-                        prevWeight = v.addTarget(target,weight);
-                    }
-                }
-            }
-            checkRep();
-            return prevWeight;
+        if (source != null && source.equals(target)) {
+            // current Vertex invariant forbids self-loop; disallow here
+            if (weight == 0) return 0;
+            throw new IllegalArgumentException("Self-loop not allowed");
         }
 
-        if(weight > 0){
-            if(!this.verticesLabels.contains(source)){
-                Vertex newSource = new Vertex(source);
-                newSource.addTarget(target,weight);
-                vertices.add(newSource);
+        // find existing vertices
+        Vertex<L> sV = null;
+        Vertex<L> tV = null;
+        for (Vertex<L> v : vertices) {
+            if (v.getLabel().equals(source)) sV = v;
+            if (v.getLabel().equals(target)) tV = v;
+        }
+
+        // create missing vertices if weight > 0
+        if (weight > 0) {
+            if (sV == null) {
+                sV = new Vertex<>(source);
+                vertices.add(sV);
                 verticesLabels.add(source);
             }
-            if(!this.verticesLabels.contains(target)){
-                Vertex newTarget = new Vertex(target);
-                newTarget.addSource(source,weight);
-                vertices.add(newTarget);
+            if (tV == null) {
+                tV = new Vertex<>(target);
+                vertices.add(tV);
                 verticesLabels.add(target);
             }
-            for(Vertex v : vertices){
-                if (v.getLabel().equals(source)){
-                    v.addTarget(target,weight);
-                }
-                else if(v.getLabel().equals(target)){
-                    v.addSource(source,weight);
-                }
-            }
+            // add/update edge on both ends
+            prevWeight = sV.addTarget(target, weight);
+            tV.addSource(source, weight);
+        } else {
+            // weight == 0 : remove edge if present
+            if (sV != null) prevWeight = sV.removeTarget(target);
+            if (tV != null) tV.removeSource(source);
         }
+
         checkRep();
         return prevWeight;
     }
     
-    @Override public boolean remove(String vertex) {
+    @Override public boolean remove(L vertex) {
         if(!verticesLabels.contains(vertex)){
             return false;
         }
-        verticesLabels.remove(vertex);
-        Iterator<Vertex> iterator = vertices.iterator();
-        while (iterator.hasNext()){
-            Vertex v = iterator.next();
-            v.removeSource(vertex);
-            v.removeTarget(vertex);
-            if (v.getLabel().equals(vertex)){
-                iterator.remove();
+        // remove edges referencing this vertex from other vertices
+        for (Vertex<L> v : vertices) {
+            if (!v.getLabel().equals(vertex)) {
+                v.removeTarget(vertex);
+                v.removeSource(vertex);
             }
         }
+        // remove the vertex object itself
+        Iterator<Vertex<L>> iterator = vertices.iterator();
+        while (iterator.hasNext()){
+            Vertex<L> v = iterator.next();
+            if (v.getLabel().equals(vertex)){
+                iterator.remove();
+                break;
+            }
+        }
+        verticesLabels.remove(vertex);
         checkRep();
         return true;
     }
     
-    @Override public Set<String> vertices() {
+    @Override public Set<L> vertices() {
         return new HashSet<>(verticesLabels);
     }
     
-    @Override public Map<String, Integer> sources(String target) {
-        for (Vertex v : vertices){
+    @Override public Map<L, Integer> sources(L target) {
+        for (Vertex<L> v : vertices){
             if (v.getLabel().equals(target)){
                 return Collections.unmodifiableMap(v.getSources());
             }
@@ -132,8 +127,8 @@ public class ConcreteVerticesGraph implements Graph<String> {
         return Collections.emptyMap();
     }
     
-    @Override public Map<String, Integer> targets(String source) {
-        for (Vertex v : vertices){
+    @Override public Map<L, Integer> targets(L source) {
+        for (Vertex<L> v : vertices){
             if (v.getLabel().equals(source)){
                 return Collections.unmodifiableMap(v.getTargets());
             }
@@ -150,10 +145,10 @@ public class ConcreteVerticesGraph implements Graph<String> {
         StringBuilder sb = new StringBuilder();
         sb.append("Graph Structure:\n");
 
-        for (Vertex v : vertices) {
+        for (Vertex<L> v : vertices) {
             sb.append("  ").append(v.getLabel()).append(": ");
 
-            Map<String, Integer> targets = v.getTargets();
+            Map<L, Integer> targets = v.getTargets();
             if (targets.isEmpty()) {
                 sb.append("(no outgoing edges)");
             } else {
@@ -178,12 +173,12 @@ public class ConcreteVerticesGraph implements Graph<String> {
  * <p>PS2 instructions: the specification and implementation of this class is
  * up to you.
  */
-class Vertex {
+class Vertex<L> {
     
     // TODO fields
-    private final String label;
-    private final Map<String, Integer> targets;
-    private final Map<String, Integer> sources;
+    private final L label;
+    private final Map<L, Integer> targets;
+    private final Map<L, Integer> sources;
     
     // Abstraction function:
     //   TODO A structure of vertex name, and a map of the target vertex and the weight of the edge to that vertex.
@@ -196,7 +191,7 @@ class Vertex {
     //   TODO Return defensive copy of map when needed.
     
     // TODO constructor
-    public Vertex(String label) {
+    public Vertex(L label) {
         this.label = label;
         this.targets = new HashMap<>();
         this.sources = new HashMap<>();
@@ -217,33 +212,33 @@ class Vertex {
         }
     }
     // TODO methods
-    public String getLabel() {
+    public L getLabel() {
         return this.label;
     }
 
-    public Map<String, Integer> getTargets() {
+    public Map<L, Integer> getTargets() {
         return new HashMap<>(this.targets);
     }
-    public Map<String, Integer> getSources() {
+    public Map<L, Integer> getSources() {
         return new HashMap<>(this.sources);
     }
-    public int addTarget(String target, int weight) {
+    public int addTarget(L target, int weight) {
         Integer old = this.targets.put(target, weight);
         checkRep();
         return old == null ? 0 : old;
     }
-    public int addSource(String source, int weight) {
+    public int addSource(L source, int weight) {
         Integer old = this.sources.put(source, weight);
         checkRep();
         return old == null ? 0 : old;
     }
-    public int removeTarget(String target)
+    public int removeTarget(L target)
     {
         Integer old = this.targets.remove(target);
         checkRep();
         return old == null ? 0 : old;
     }
-    public int removeSource(String source)
+    public int removeSource(L source)
     {
         Integer old = this.sources.remove(source);
         checkRep();
@@ -251,6 +246,6 @@ class Vertex {
     }
     // TODO toString()
     @Override public String toString() {
-        return this.label;
+        return String.valueOf(this.label);
     }
 }

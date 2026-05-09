@@ -32,7 +32,23 @@ public class GraphStaticTest {
         assertEquals("expected empty() graph to have no vertices",
                 Collections.emptySet(), Graph.empty().vertices());
     }
-    
+    @Test
+    public void testStringLabels() {
+        Graph<String> graph = new ConcreteVerticesGraph<>();
+        assertTrue(graph.add("A"));
+        assertTrue(graph.add("B"));
+        assertTrue(graph.vertices().contains("A"));
+        assertTrue(graph.vertices().contains("B"));
+    }
+    @Test
+    public void testIntegerLabels() {
+        Graph<Integer> graph = new ConcreteVerticesGraph<>();
+        assertTrue(graph.add(1));
+        assertTrue(graph.add(2));
+        assertTrue(graph.vertices().contains(1));
+        assertTrue(graph.vertices().contains(2));
+    }
+
     // TODO test other vertex label types in Problem 3.2
     
 }

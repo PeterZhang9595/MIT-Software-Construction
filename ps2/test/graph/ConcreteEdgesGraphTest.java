@@ -21,7 +21,7 @@ public class ConcreteEdgesGraphTest extends GraphInstanceTest {
      * Provide a ConcreteEdgesGraph for tests in GraphInstanceTest.
      */
     @Override public Graph<String> emptyInstance() {
-        return new ConcreteEdgesGraph();
+        return new ConcreteEdgesGraph<>();
     }
     
     /*
@@ -75,7 +75,7 @@ public class ConcreteEdgesGraphTest extends GraphInstanceTest {
     
     @Test
     public void testEdgeConstructor() {
-        Edge e = new Edge("A", "B", 5);
+        Edge<String> e = new Edge<>("A", "B", 5);
         assertEquals("A", e.getSource());
         assertEquals("B", e.getTarget());
         assertEquals(5, e.getWeight());
@@ -83,7 +83,7 @@ public class ConcreteEdgesGraphTest extends GraphInstanceTest {
     
     @Test
     public void testEdgeGetters() {
-        Edge e = new Edge("X", "Y", 10);
+        Edge<String> e = new Edge<>("X", "Y", 10);
         assertEquals("X", e.getSource());
         assertEquals("Y", e.getTarget());
         assertEquals(10, e.getWeight());
@@ -91,7 +91,7 @@ public class ConcreteEdgesGraphTest extends GraphInstanceTest {
     
     @Test
     public void testEdgeToString() {
-        Edge e = new Edge("P", "Q", 7);
+        Edge<String> e = new Edge<>("P", "Q", 7);
         String str = e.toString();
         assertTrue(str.contains("P"));
         assertTrue(str.contains("Q"));
@@ -100,22 +100,22 @@ public class ConcreteEdgesGraphTest extends GraphInstanceTest {
     
     @Test(expected = AssertionError.class)
     public void testEdgeImmutable_SourceNotNull() {
-        new Edge(null, "B", 5);
+        new Edge<>(null, "B", 5);
     }
     
     @Test(expected = AssertionError.class)
     public void testEdgeImmutable_TargetNotNull() {
-        new Edge("A", null, 5);
+        new Edge<>("A", null, 5);
     }
     
     @Test(expected = AssertionError.class)
     public void testEdgeImmutable_SourceAndTargetDistinct() {
-        new Edge("A", "A", 5);
+        new Edge<>("A", "A", 5);
     }
     
     @Test(expected = AssertionError.class)
     public void testEdgeImmutable_WeightPositive() {
-        new Edge("A", "B", 0);
+        new Edge<>("A", "B", 0);
     }
     
 }
