@@ -5,6 +5,7 @@ package poet;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.*;
 
 import graph.Graph;
 
@@ -55,11 +56,11 @@ public class GraphPoet {
     private final Graph<String> graph = Graph.empty();
     
     // Abstraction function:
-    //   TODO
+    //   TODO The representation is a graph, and the abstraction is graphPost which you can call its Poem method to generate a poem.
     // Representation invariant:
-    //   TODO
+    //   TODO All write in test file.
     // Safety from rep exposure:
-    //   TODO
+    //   TODO This is safe enough.
     
     /**
      * Create a new poet with the graph from corpus (as described above).
@@ -68,9 +69,19 @@ public class GraphPoet {
      * @throws IOException if the corpus file cannot be found or read
      */
     public GraphPoet(File corpus) throws IOException {
-        throw new RuntimeException("not implemented");
+        try (Scanner input = new Scanner(corpus)) {
+            String prev = null;
+            while(input.hasNext()) {
+                String curr = input.next().toLowerCase();
+                if(prev != null) {
+                    int old = this.graph.targets(prev).getOrDefault(curr, 0);
+                    this.graph.set(prev,curr,old+1);
+                }
+                prev = curr;
+            }
+        }
     }
-    
+
     // TODO checkRep
     
     /**
@@ -80,9 +91,52 @@ public class GraphPoet {
      * @return poem (as described above)
      */
     public String poem(String input) {
-        throw new RuntimeException("not implemented");
+        // 1. Split the input into multiple words.
+        List<String> words = new ArrayList<>();
+        words = Arrays.asList(input.split("\\s+"));
+        // 2. Iterate from first word to the last and insert a bridge word between every adjacent pair of words.
+        List<String> newWords = new ArrayList<>();
+        for(int i = 0; i < words.size()-1; i++) {
+            String curr = words.get(i);
+            String next = words.get(i+1);
+            newWords.add(curr);
+            String bridge = searchBridge( curr.toLowerCase(), next.toLowerCase());
+            if(!bridge.isEmpty()) {
+                newWords.add(bridge);
+            }
+        }
+        newWords.add(words.get(words.size()-1));
+        return String.join(" ", newWords);
     }
-    
+    public String searchBridge( String word1, String word2) {
+        String output = "";
+        if(graph.vertices().contains(word1)&&graph.vertices().contains(word2)) {
+            int maxWeight = 0;
+            int tempWeight = 0;
+            Map<String, Integer> targetsOfWord1 = graph.targets(word1);
+            if(!targetsOfWord1.isEmpty())
+            {
+                for(Map.Entry<String, Integer> entry : targetsOfWord1.entrySet()) {
+                    tempWeight = entry.getValue();
+                    String tempWord = entry.getKey();
+                    if(graph.targets(tempWord).containsKey(word2)) {
+                        tempWeight += graph.targets(tempWord).get(word2);
+                        if(tempWeight > maxWeight) {
+                            maxWeight = tempWeight;
+                            output = entry.getKey();
+                        }
+                    }
+                    else{
+                        continue;
+                    }
+
+                }
+            }
+        }
+        return output;
+    }
     // TODO toString()
-    
+    @Override public String toString() {
+        return graph.toString();
+    }
 }
